@@ -45,7 +45,10 @@ public class UserManager {
 	public static final String PROP_GCM_REG_ID = "gcmRegId";
 	public static final String PROP_LAST_LOGIN = "lastLogin";
 	public static final String PROP_LAST_GCM_REGISTER = "lastGCMRegister";
-	public static final String PROP_ROLE = "role";
+	public static final String PROP_ROLE = "role";	
+	public static final String PROP_CPF = "cpf";
+	public static final String PROP_SALES_ID = "salesId";
+	public static final String PROP_CRM_ID = "crmId";
 
 	@Context
 	SecurityContext securityContext;
@@ -100,10 +103,11 @@ public class UserManager {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@PermitAll
-	public User saveUser(@Valid User user) {
+	public User saveOrUpdateUser(@Valid User user) {
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
 		if (!checkIfEmailExist(user)) {
+			// USERs can only create USERs
 			if (!securityContext.isUserInRole("ADMIN")) {
 				user.setRole("USER");
 			}
@@ -237,9 +241,27 @@ public class UserManager {
 			}
 		}
 	}
+	
+	private boolean checkIfCpfExist(User user) {
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
+		Filter cpfFilter = new FilterPredicate(PROP_EMAIL,
+				FilterOperator.EQUAL, user.getCpf());
+		Query query = new Query(USER_KIND).setFilter(cpfFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
+		if (userEntity == null) {
+			return false;
+		} else {
+			if (userEntity.getKey().getId() == user.getId()) {
+				// está alterando o mesmo user
+				return false;
+			} else {
+				return true;
+			}
+		}
+	}
 
 	private void userToEntity(User user, Entity userEntity) {
-		// TODO : SET THE NEW FIELDS TOO
 		userEntity.setProperty(PROP_EMAIL, user.getEmail());
 		userEntity.setProperty(PROP_PASSWORD, user.getPassword());
 		userEntity.setProperty(PROP_GCM_REG_ID, user.getGcmRegId());
@@ -247,10 +269,12 @@ public class UserManager {
 		userEntity.setProperty(PROP_LAST_GCM_REGISTER,
 				user.getLastGCMRegister());
 		userEntity.setProperty(PROP_ROLE, user.getRole());
+		userEntity.setProperty(PROP_CPF, user.getCpf());
+		userEntity.setProperty(PROP_SALES_ID, user.getSalesId());
+		userEntity.setProperty(PROP_CRM_ID, user.getCrmId());
 	}
 
 	private User entityToUser(Entity userEntity) {
-		// TODO : SET THE NEW FIELDS TOO
 		User user = new User();
 		user.setId(userEntity.getKey().getId());
 		user.setEmail((String) userEntity.getProperty(PROP_EMAIL));
@@ -260,7 +284,10 @@ public class UserManager {
 		user.setLastLogin((Date) userEntity.getProperty(PROP_LAST_LOGIN));
 		user.setLastGCMRegister((Date) userEntity
 				.getProperty(PROP_LAST_GCM_REGISTER));
-		user.setRole((String) userEntity.getProperty(PROP_ROLE));
+		user.setRole((String) userEntity.getProperty(PROP_ROLE));		
+		user.setCpf((String) userEntity.getProperty(PROP_CPF));
+		user.setSalesId((long) userEntity.getProperty(PROP_SALES_ID));
+		user.setCrmId((long) userEntity.getProperty(PROP_CRM_ID));
 		return user;
 	}
 }
