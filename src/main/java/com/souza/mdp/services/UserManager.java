@@ -56,8 +56,8 @@ public class UserManager {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
-	@Path("/{email}")
-	public User getUser(@PathParam(PROP_EMAIL) String email) {
+	@Path("/byemail/{email}")
+	public User getUserByEmail(@PathParam(PROP_EMAIL) String email) {
 
 		if (securityContext.getUserPrincipal().getName().equals(email)
 				|| securityContext.isUserInRole("ADMIN")) {
@@ -77,6 +77,35 @@ public class UserManager {
 
 		} else {
 			throw new WebApplicationException(Status.FORBIDDEN);
+		}
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@RolesAllowed({ "ADMIN", "USER" })
+	@Path("/bycpf/{cpf}")
+	public User getUserByCpf(@PathParam(PROP_CPF) String cpf) {
+		
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
+		Filter cpfFilter = new FilterPredicate(PROP_CPF,
+				FilterOperator.EQUAL, cpf);
+		Query query = new Query(USER_KIND).setFilter(cpfFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
+
+		if (userEntity != null) {
+			if (securityContext.getUserPrincipal().getName()
+					.equals(userEntity.getProperty(PROP_EMAIL))
+					|| securityContext.isUserInRole("ADMIN")) {
+
+				User user = entityToUser(userEntity);
+				return user;
+
+			} else {
+				throw new WebApplicationException(Status.FORBIDDEN);
+			}
+		} else {
+			throw new WebApplicationException(Status.NOT_FOUND);
 		}
 	}
 
@@ -172,28 +201,30 @@ public class UserManager {
 
 	@DELETE
 	@Produces(MediaType.APPLICATION_JSON)
-	@Path("/{email}")
+	@Path("/{cpf}")
 	@RolesAllowed({ "ADMIN", "USER" })
-	public User deleteUser(@PathParam("email") String email) {
+	public Status deleteUser(@PathParam(PROP_CPF) String cpf) {
+		
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
+		Filter cpfFilter = new FilterPredicate(PROP_CPF,
+				FilterOperator.EQUAL, cpf);
+		Query query = new Query(USER_KIND).setFilter(cpfFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
 
-		if (securityContext.getUserPrincipal().getName().equals(email)
-				|| securityContext.isUserInRole("ADMIN")) {
-			DatastoreService datastore = DatastoreServiceFactory
-					.getDatastoreService();
-			Filter emailFilter = new FilterPredicate(PROP_EMAIL,
-					FilterOperator.EQUAL, email);
-			Query query = new Query(USER_KIND).setFilter(emailFilter);
-			Entity userEntity = datastore.prepare(query).asSingleEntity();
-			if (userEntity != null) {
+		if (userEntity != null) {
+			if (securityContext.getUserPrincipal().getName().equals(userEntity.getProperty(PROP_EMAIL))
+					|| securityContext.isUserInRole("ADMIN")) {
+
 				datastore.delete(userEntity.getKey());
-				User user = entityToUser(userEntity);
-				return user;
-			} else {
-				throw new WebApplicationException(Status.NOT_FOUND);
+				return Status.OK;
 
+			} else {
+				throw new WebApplicationException(Status.FORBIDDEN);
 			}
 		} else {
-			throw new WebApplicationException(Status.FORBIDDEN);
+			throw new WebApplicationException(Status.NOT_FOUND);
+
 		}
 	}
 
