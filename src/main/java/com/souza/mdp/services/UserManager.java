@@ -133,26 +133,73 @@ public class UserManager {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@PermitAll
 	public User saveOrUpdateUser(@Valid User user) {
-		DatastoreService datastore = DatastoreServiceFactory
-				.getDatastoreService();
+		
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		
 		if (!checkIfEmailExist(user)) {
-			// USERs can only create USERs
-			if (!securityContext.isUserInRole("ADMIN")) {
-				user.setRole("USER");
+			
+			if (!checkIfCpfExist(user)) {
+				
+				datastore = DatastoreServiceFactory.getDatastoreService();
+				Filter emailFilter = new FilterPredicate(PROP_EMAIL, FilterOperator.EQUAL, user.getEmail());
+				Query query = new Query(USER_KIND).setFilter(emailFilter);
+				Entity userEntity = datastore.prepare(query).asSingleEntity();
+				
+				if (userEntity != null) { 	// EDIT USER
+					// ONLY OWNER OR ADMIN CAN EDIT THE USER
+					if (securityContext.getUserPrincipal().getName().equals(user.getEmail())
+							|| securityContext.isUserInRole("ADMIN")) {
+						
+						if (user.getId() != 0) {
+
+							userToEntity(user, userEntity);
+							if (!securityContext.isUserInRole("ADMIN")) {
+								user.setRole("USER");
+							}
+							datastore.put(userEntity);
+							return user;
+
+						} else {
+							throw new WebApplicationException(
+									"O	ID	do	usuário	deve	ser	informado	para	ser	alterado",
+									Status.BAD_REQUEST);
+						}
+						
+					} else {
+						throw new WebApplicationException(Status.FORBIDDEN);
+					}
+					
+				} else { 					// CREATE NEW USER
+					// ONLY ADMIN CAN CREATE NEW USERS											
+					if (securityContext.isUserInRole("ADMIN")) {
+						
+						Key userKey = KeyFactory.createKey(USER_KIND,
+								"userKey");
+						userEntity = new Entity(USER_KIND, userKey);
+						user.setGcmRegId("");
+						user.setLastGCMRegister(null);
+						user.setLastLogin(null);
+						userToEntity(user, userEntity);
+						datastore.put(userEntity);
+						user.setId(userEntity.getKey().getId());
+						
+					} else {
+						throw new WebApplicationException(Status.FORBIDDEN);
+					}
+				}
+				
+			} else {
+				throw new WebApplicationException(
+						"Já	existe	um	usuário	cadastrado	com	o	mesmo	CPF",
+						Status.BAD_REQUEST);
 			}
-			Key userKey = KeyFactory.createKey(USER_KIND, "userKey");
-			Entity userEntity = new Entity(USER_KIND, userKey);
-			user.setGcmRegId("");
-			user.setLastGCMRegister(null);
-			user.setLastLogin(null);
-			userToEntity(user, userEntity);
-			datastore.put(userEntity);
-			user.setId(userEntity.getKey().getId());
+			
 		} else {
 			throw new WebApplicationException(
 					"Já	existe	um	usuário	cadastrado	com	o	mesmo	e-mail",
 					Status.BAD_REQUEST);
 		}
+			
 		return user;
 	}
 
