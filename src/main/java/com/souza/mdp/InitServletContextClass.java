@@ -6,6 +6,8 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response.Status;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -52,14 +54,39 @@ public class InitServletContextClass implements ServletContextListener {
 			Entity userEntity = new Entity(UserManager.USER_KIND, userKey);
 			userEntity.setProperty(UserManager.PROP_EMAIL, "admin@souza.com");
 			userEntity.setProperty(UserManager.PROP_PASSWORD, "Admin#7");
+			userEntity.setProperty(UserManager.PROP_CPF, "000.000.000-02");
 			userEntity.setProperty(UserManager.PROP_GCM_REG_ID, "");
 			userEntity.setProperty(UserManager.PROP_LAST_LOGIN, Calendar
 					.getInstance().getTime());
 			userEntity.setProperty(UserManager.PROP_LAST_GCM_REGISTER, Calendar
 					.getInstance().getTime());
 			userEntity.setProperty(UserManager.PROP_ROLE, "ADMIN");
+			userEntity.setProperty(UserManager.PROP_SALES_ID, 0);
+			userEntity.setProperty(UserManager.PROP_CRM_ID, 0);
 
 			datastore.put(userEntity);
 		}
 	}
+
+	/*private void deleteOldAdmin() {
+		// TODO Auto-generated method stub
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
+		Filter cpfFilter = new FilterPredicate(UserManager.PROP_EMAIL,
+				FilterOperator.EQUAL, "admin2@souza.com");
+		Query query = new Query(UserManager.USER_KIND).setFilter(cpfFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
+
+		if (userEntity != null) {
+			
+
+				datastore.delete(userEntity.getKey());
+
+			
+		} else {
+			//throw new WebApplicationException(Status.NOT_FOUND);
+
+		}
+		
+	}*/
 }

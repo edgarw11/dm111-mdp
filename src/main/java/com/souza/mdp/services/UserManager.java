@@ -352,7 +352,7 @@ public class UserManager {
 		userEntity.setProperty(PROP_CRM_ID, user.getCrmId());
 	}
 
-	private User entityToUser(Entity userEntity) {
+	static User entityToUser(Entity userEntity) {
 		User user = new User();
 		user.setId(userEntity.getKey().getId());
 		user.setEmail((String) userEntity.getProperty(PROP_EMAIL));
@@ -364,8 +364,8 @@ public class UserManager {
 				.getProperty(PROP_LAST_GCM_REGISTER));
 		user.setRole((String) userEntity.getProperty(PROP_ROLE));		
 		user.setCpf((String) userEntity.getProperty(PROP_CPF));
-		user.setSalesId((long) userEntity.getProperty(PROP_SALES_ID));
-		user.setCrmId((long) userEntity.getProperty(PROP_CRM_ID));
+		user.setSalesId((Long) userEntity.getProperty(PROP_SALES_ID));
+		user.setCrmId((Long) userEntity.getProperty(PROP_CRM_ID));
 		return user;
 	}
 }
