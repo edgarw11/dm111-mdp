@@ -113,8 +113,8 @@ public class AuthFilter implements ContainerRequestFilter {
 	    				});
 	    				
 	    				isUserAllowed = true;
-	    			}
-	    		}	    		
+	    			} 
+	    		}
 	    	}
         } catch (CacheException e) {
         }       

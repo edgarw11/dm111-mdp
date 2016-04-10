@@ -8,26 +8,26 @@ public class ProductOfInterest {
 	@NotNull
 	private String cpf;
 	@NotNull
-	private long clientSalesId;
+	private Long clientId;
 	@NotNull
-	private long productSalesId;
+	private Long productId;
 	@NotNull
-	private float targetPrice;
+	private Double targetPrice;
 
 	public ProductOfInterest() {
 		super();
 	}
 
-	public ProductOfInterest(String cpf, long clientSalesId,
-			long productSalesId, float targetPrice) {
+	public ProductOfInterest(String cpf, Long clientSalesId,
+			Long productSalesId, Double targetPrice) {
 		super();
 		this.cpf = cpf;
-		this.clientSalesId = clientSalesId;
-		this.productSalesId = productSalesId;
+		this.clientId = clientSalesId;
+		this.productId = productSalesId;
 		this.targetPrice = targetPrice;
 	}
 
-	public long getId() {
+	public Long getId() {
 		return id;
 	}
 
@@ -43,27 +43,27 @@ public class ProductOfInterest {
 		this.cpf = cpf;
 	}
 
-	public long getClientSalesId() {
-		return clientSalesId;
+	public Long getClientId() {
+		return clientId;
 	}
 
-	public void setClientSalesId(long clientSalesId) {
-		this.clientSalesId = clientSalesId;
+	public void setClientId(long clientSalesId) {
+		this.clientId = clientSalesId;
 	}
 
-	public long getProductSalesId() {
-		return productSalesId;
+	public Long getProductId() {
+		return productId;
 	}
 
-	public void setProductSalesId(long productSalesId) {
-		this.productSalesId = productSalesId;
+	public void setProductId(Long productSalesId) {
+		this.productId = productSalesId;
 	}
 
-	public float getTargetPrice() {
+	public Double getTargetPrice() {
 		return targetPrice;
 	}
 
-	public void setTargetPrice(float targetPrice) {
+	public void setTargetPrice(Double targetPrice) {
 		this.targetPrice = targetPrice;
 	}
 

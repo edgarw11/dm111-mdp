@@ -85,8 +85,11 @@ public class UserManager {
 	@RolesAllowed({ "ADMIN", "USER" })
 	@Path("/bycpf/{cpf}")
 	public User getUserByCpf(@PathParam(PROP_CPF) String cpf) {
+		
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
 
-		Entity userEntity = getUserEntityByCpf(cpf);
+		Entity userEntity = getUserEntityByCpf(cpf, datastore);
 
 		if (userEntity != null) {
 			if (securityContext.getUserPrincipal().getName()
@@ -104,9 +107,9 @@ public class UserManager {
 		}
 	}
 
-	public String getUserMailByCpf(String cpf) {
+	public static String getUserMailByCpf(String cpf, DatastoreService datastore) {
 
-		Entity userEntity = getUserEntityByCpf(cpf);
+		Entity userEntity = getUserEntityByCpf(cpf, datastore);
 
 		if (userEntity != null) {
 
@@ -118,9 +121,7 @@ public class UserManager {
 		}
 	}
 
-	private Entity getUserEntityByCpf(String cpf) {
-		DatastoreService datastore = DatastoreServiceFactory
-				.getDatastoreService();
+	private static Entity getUserEntityByCpf(String cpf, DatastoreService datastore) {
 		Filter cpfFilter = new FilterPredicate(PROP_CPF, FilterOperator.EQUAL,
 				cpf);
 		Query query = new Query(USER_KIND).setFilter(cpfFilter);
@@ -135,16 +136,27 @@ public class UserManager {
 		List<User> users = new ArrayList<>();
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
-		Query query = new Query(USER_KIND).addSort(PROP_EMAIL,
-				SortDirection.ASCENDING);
-		List<Entity> userEntities = datastore.prepare(query).asList(
-				FetchOptions.Builder.withDefaults());
-		for (Entity userEntity : userEntities) {
-			User user = entityToUser(userEntity);
-
-			users.add(user);
+		
+		if (securityContext == null){
+			throw new WebApplicationException(Status.FORBIDDEN);
 		}
-		return users;
+		
+		if (securityContext.getUserPrincipal().getName().equals("admin@souza.com")
+				|| securityContext.isUserInRole("ADMIN")) {
+			
+			Query query = new Query(USER_KIND).addSort(PROP_EMAIL,
+					SortDirection.ASCENDING);
+			List<Entity> userEntities = datastore.prepare(query).asList(
+					FetchOptions.Builder.withDefaults());
+			for (Entity userEntity : userEntities) {
+				User user = entityToUser(userEntity);
+
+				users.add(user);
+			}
+			return users;
+		} else {
+			throw new WebApplicationException(Status.FORBIDDEN);
+		}
 	}
 
 	@POST
@@ -278,7 +290,7 @@ public class UserManager {
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
 
-		Entity userEntity = getUserEntityByCpf(cpf);
+		Entity userEntity = getUserEntityByCpf(cpf, datastore);
 
 		if (userEntity != null) {
 			if (securityContext.getUserPrincipal().getName()

@@ -28,6 +28,7 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.gson.Gson;
 import com.souza.mdp.models.OrderUpdateMsg;
+import com.souza.mdp.models.PriceUpdate;
 import com.souza.mdp.models.User;
 import com.souza.mdp.services.UserManager;
 
@@ -36,6 +37,10 @@ public class MessageManager {
 	
 	private static final Logger log = Logger.getLogger("MessageManager");
 	private static final String API_KEY = "AIzaSyDLDmBjPteeAQlKvjkoalC9hsYu6-a-R9s";
+	
+	private static final String MSG_TYPE_ORDER_UPDATE = "orderUpdateMsg";
+	
+	private static final String MSG_TYPE_PRICE_UPDATE = "priceUpdateMsg";
 	
 	@Context
 	SecurityContext securityContext;
@@ -48,15 +53,22 @@ public class MessageManager {
 	public Status sendMessage(@PathParam("cpf") String cpf,
 			@Valid OrderUpdateMsg msg) {
 
+		sendMsg(msg, cpf, MSG_TYPE_ORDER_UPDATE);
+		
+		return Status.OK;
+	}
+
+	private void sendMsg(Object msg, String cpf, String type) {
+		
 		User user;
 		if ((user = findUserByCpf(cpf)) == null) {
 			throw new WebApplicationException(Status.BAD_REQUEST);
 		}
-
+		
 		// This is the API_KEY value generated on GAE application console
 		Sender sender = new Sender(API_KEY);
 		Gson gson = new Gson();
-		Message message = new Message.Builder().addData("orderUpdateMsg",
+		Message message = new Message.Builder().addData(type,
 				gson.toJson(msg)).build();
 		Result result;
 		
@@ -77,8 +89,6 @@ public class MessageManager {
 		} catch (IOException e) {
 			throw new WebApplicationException(Status.INTERNAL_SERVER_ERROR);
 		}
-		
-		return Status.OK;
 	}
 
 	private User findUserByCpf(String cpf) {
@@ -93,6 +103,12 @@ public class MessageManager {
 		} else {
 			return null;
 		}
+	}
+
+	public void sendPriceAlertMessage(String cpf, PriceUpdate priceUpdate) {
+
+		sendMsg(priceUpdate, cpf, MSG_TYPE_PRICE_UPDATE);
+		
 	}
 
 }
