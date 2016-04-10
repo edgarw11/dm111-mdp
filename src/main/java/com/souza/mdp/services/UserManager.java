@@ -45,7 +45,7 @@ public class UserManager {
 	public static final String PROP_GCM_REG_ID = "gcmRegId";
 	public static final String PROP_LAST_LOGIN = "lastLogin";
 	public static final String PROP_LAST_GCM_REGISTER = "lastGCMRegister";
-	public static final String PROP_ROLE = "role";	
+	public static final String PROP_ROLE = "role";
 	public static final String PROP_CPF = "cpf";
 	public static final String PROP_SALES_ID = "salesId";
 	public static final String PROP_CRM_ID = "crmId";
@@ -79,19 +79,14 @@ public class UserManager {
 			throw new WebApplicationException(Status.FORBIDDEN);
 		}
 	}
-	
+
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
 	@Path("/bycpf/{cpf}")
 	public User getUserByCpf(@PathParam(PROP_CPF) String cpf) {
-		
-		DatastoreService datastore = DatastoreServiceFactory
-				.getDatastoreService();
-		Filter cpfFilter = new FilterPredicate(PROP_CPF,
-				FilterOperator.EQUAL, cpf);
-		Query query = new Query(USER_KIND).setFilter(cpfFilter);
-		Entity userEntity = datastore.prepare(query).asSingleEntity();
+
+		Entity userEntity = getUserEntityByCpf(cpf);
 
 		if (userEntity != null) {
 			if (securityContext.getUserPrincipal().getName()
@@ -107,6 +102,30 @@ public class UserManager {
 		} else {
 			throw new WebApplicationException(Status.NOT_FOUND);
 		}
+	}
+
+	public String getUserMailByCpf(String cpf) {
+
+		Entity userEntity = getUserEntityByCpf(cpf);
+
+		if (userEntity != null) {
+
+			String email = (String)userEntity.getProperty(PROP_EMAIL);
+			return email;
+
+		} else {
+			throw new WebApplicationException(Status.NOT_FOUND);
+		}
+	}
+
+	private Entity getUserEntityByCpf(String cpf) {
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
+		Filter cpfFilter = new FilterPredicate(PROP_CPF, FilterOperator.EQUAL,
+				cpf);
+		Query query = new Query(USER_KIND).setFilter(cpfFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
+		return userEntity;
 	}
 
 	@GET
@@ -133,23 +152,26 @@ public class UserManager {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
 	public User saveOrUpdateUser(@Valid User user) {
-		
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		
+
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
+
+		datastore = DatastoreServiceFactory.getDatastoreService();
+		Filter emailFilter = new FilterPredicate(PROP_EMAIL,
+				FilterOperator.EQUAL, user.getEmail());
+		Query query = new Query(USER_KIND).setFilter(emailFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
+
 		if (!checkIfEmailExist(user)) {
-			
+
 			if (!checkIfCpfExist(user)) {
-				
-				datastore = DatastoreServiceFactory.getDatastoreService();
-				Filter emailFilter = new FilterPredicate(PROP_EMAIL, FilterOperator.EQUAL, user.getEmail());
-				Query query = new Query(USER_KIND).setFilter(emailFilter);
-				Entity userEntity = datastore.prepare(query).asSingleEntity();
-				
-				if (userEntity != null) { 	// EDIT USER
+
+				if (userEntity != null) { // EDIT USER
 					// ONLY OWNER OR ADMIN CAN EDIT THE USER
-					if (securityContext.getUserPrincipal().getName().equals(user.getEmail())
+					if (securityContext.getUserPrincipal().getName()
+							.equals(user.getEmail())
 							|| securityContext.isUserInRole("ADMIN")) {
-						
+
 						if (user.getId() != 0) {
 
 							userToEntity(user, userEntity);
@@ -164,17 +186,17 @@ public class UserManager {
 									"O	ID	do	usuário	deve	ser	informado	para	ser	alterado",
 									Status.BAD_REQUEST);
 						}
-						
+
 					} else {
 						throw new WebApplicationException(Status.FORBIDDEN);
 					}
-					
-				} else { 					// CREATE NEW USER
-					// ONLY ADMIN CAN CREATE NEW USERS											
+
+				} else { // CREATE NEW USER
+					// ONLY ADMIN CAN CREATE NEW USERS
 					if (securityContext.isUserInRole("ADMIN")) {
-						
-						Key userKey = KeyFactory.createKey(USER_KIND,
-								"userKey");
+
+						Key userKey = KeyFactory
+								.createKey(USER_KIND, "userKey");
 						userEntity = new Entity(USER_KIND, userKey);
 						user.setGcmRegId("");
 						user.setLastGCMRegister(null);
@@ -182,24 +204,24 @@ public class UserManager {
 						userToEntity(user, userEntity);
 						datastore.put(userEntity);
 						user.setId(userEntity.getKey().getId());
-						
+
 					} else {
 						throw new WebApplicationException(Status.FORBIDDEN);
 					}
 				}
-				
+
 			} else {
 				throw new WebApplicationException(
 						"Já	existe	um	usuário	cadastrado	com	o	mesmo	CPF",
 						Status.BAD_REQUEST);
 			}
-			
+
 		} else {
 			throw new WebApplicationException(
 					"Já	existe	um	usuário	cadastrado	com	o	mesmo	e-mail",
 					Status.BAD_REQUEST);
 		}
-			
+
 		return user;
 	}
 
@@ -252,16 +274,15 @@ public class UserManager {
 	@Path("/{cpf}")
 	@RolesAllowed({ "ADMIN", "USER" })
 	public Status deleteUser(@PathParam(PROP_CPF) String cpf) {
-		
+
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
-		Filter cpfFilter = new FilterPredicate(PROP_CPF,
-				FilterOperator.EQUAL, cpf);
-		Query query = new Query(USER_KIND).setFilter(cpfFilter);
-		Entity userEntity = datastore.prepare(query).asSingleEntity();
+
+		Entity userEntity = getUserEntityByCpf(cpf);
 
 		if (userEntity != null) {
-			if (securityContext.getUserPrincipal().getName().equals(userEntity.getProperty(PROP_EMAIL))
+			if (securityContext.getUserPrincipal().getName()
+					.equals(userEntity.getProperty(PROP_EMAIL))
 					|| securityContext.isUserInRole("ADMIN")) {
 
 				datastore.delete(userEntity.getKey());
@@ -320,7 +341,7 @@ public class UserManager {
 			}
 		}
 	}
-	
+
 	private boolean checkIfCpfExist(User user) {
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
@@ -363,7 +384,7 @@ public class UserManager {
 		user.setLastLogin((Date) userEntity.getProperty(PROP_LAST_LOGIN));
 		user.setLastGCMRegister((Date) userEntity
 				.getProperty(PROP_LAST_GCM_REGISTER));
-		user.setRole((String) userEntity.getProperty(PROP_ROLE));		
+		user.setRole((String) userEntity.getProperty(PROP_ROLE));
 		user.setCpf((String) userEntity.getProperty(PROP_CPF));
 		user.setSalesId((Long) userEntity.getProperty(PROP_SALES_ID));
 		user.setCrmId((Long) userEntity.getProperty(PROP_CRM_ID));
