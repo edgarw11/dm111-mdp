@@ -131,7 +131,7 @@ public class UserManager {
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
-	@PermitAll
+	@RolesAllowed({ "ADMIN", "USER" })
 	public User saveOrUpdateUser(@Valid User user) {
 		
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -208,6 +208,7 @@ public class UserManager {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Path("/{email}")
 	@RolesAllowed({ "ADMIN", "USER" })
+	@Deprecated
 	public User alterUser(@PathParam("email") String email, @Valid User user) {
 
 		if (user.getId() != 0) {
