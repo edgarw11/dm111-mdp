@@ -4,6 +4,7 @@ import javax.validation.constraints.NotNull;
 
 public class ProductOfInterest {
 
+	private long id;
 	@NotNull
 	private String cpf;
 	@NotNull
@@ -24,6 +25,14 @@ public class ProductOfInterest {
 		this.clientSalesId = clientSalesId;
 		this.productSalesId = productSalesId;
 		this.targetPrice = targetPrice;
+	}
+
+	public long getId() {
+		return id;
+	}
+
+	public void setId(long id) {
+		this.id = id;
 	}
 
 	public String getCpf() {
