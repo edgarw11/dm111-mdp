@@ -148,16 +148,17 @@ public class AuthFilter implements ContainerRequestFilter {
         	canUseCache = false;        	
         }		
         
-        if (canUseCache == false) {
-    		user.setEmail((String) userEntity.getProperty(UserManager.PROP_EMAIL));
-    		user.setPassword((String) userEntity.getProperty(UserManager.PROP_PASSWORD));
-    		user.setId(userEntity.getKey().getId());
-    		user.setGcmRegId((String) userEntity.getProperty(UserManager.PROP_GCM_REG_ID));
-    		user.setLastLogin((Date) Calendar.getInstance().getTime());
-    		user.setLastGCMRegister((Date) userEntity.getProperty(UserManager.PROP_LAST_GCM_REGISTER));
-    		user.setRole((String) userEntity.getProperty(UserManager.PROP_ROLE));			    
-    	    
-    		userEntity.setProperty(UserManager.PROP_LAST_LOGIN, user.getLastLogin());
+        
+		user.setEmail((String) userEntity.getProperty(UserManager.PROP_EMAIL));
+		user.setPassword((String) userEntity.getProperty(UserManager.PROP_PASSWORD));
+		user.setId(userEntity.getKey().getId());
+		user.setGcmRegId((String) userEntity.getProperty(UserManager.PROP_GCM_REG_ID));
+		user.setLastLogin((Date) Calendar.getInstance().getTime());
+		user.setLastGCMRegister((Date) userEntity.getProperty(UserManager.PROP_LAST_GCM_REGISTER));
+		user.setRole((String) userEntity.getProperty(UserManager.PROP_ROLE));
+		userEntity.setProperty(UserManager.PROP_LAST_LOGIN, user.getLastLogin());
+		
+    	if (canUseCache == false) {  
     		datastore.put(userEntity);        	
         }
 		
