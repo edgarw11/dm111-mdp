@@ -34,6 +34,8 @@ public class AuthFilter implements ContainerRequestFilter {
 
 	private static final String ACCESS_UNAUTHORIZED = "Você não tem permissão para acessar esse recurso";
 	
+	private static final String SWAGER_JSON = "/api/swagger.json";
+	
     @Context
     private ResourceInfo resourceInfo;
         
@@ -43,6 +45,10 @@ public class AuthFilter implements ContainerRequestFilter {
 		Method method = resourceInfo.getResourceMethod();
 		
 		if (method.isAnnotationPresent(PermitAll.class)) {
+			return;
+		}
+		
+		if (requestContext.getUriInfo().getRequestUri().getPath().equals(SWAGER_JSON)) {
 			return;
 		}
 			

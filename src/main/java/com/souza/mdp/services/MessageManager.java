@@ -1,5 +1,7 @@
 package com.souza.mdp.services;
 
+import io.swagger.annotations.Api;
+
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -32,6 +34,7 @@ import com.souza.mdp.models.PriceUpdate;
 import com.souza.mdp.models.User;
 import com.souza.mdp.services.UserManager;
 
+@Api(value="Message Manager")
 @Path("/message")
 public class MessageManager {
 	

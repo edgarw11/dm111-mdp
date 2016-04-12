@@ -1,5 +1,7 @@
 package com.souza.mdp.services;
 
+import io.swagger.annotations.Api;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +35,7 @@ import com.google.appengine.api.datastore.Query.SortDirection;
 import com.souza.mdp.models.PriceUpdate;
 import com.souza.mdp.models.ProductOfInterest;
 
+@Api(value="Products of Interest")
 @Path("productsOfInterest")
 public class ProductOfInterestManager {
 
@@ -88,18 +91,6 @@ public class ProductOfInterestManager {
 		
 		String userMail = UserManager.getUserMailByCpf(prodOfInterest.getCpf(), datastore);
 
-		if (securityContext == null)
-			System.out.println(" ######## security context ###################");
-		
-		if(securityContext.getUserPrincipal() == null)
-			System.out.println(" ######## getUserPrincipal ###################");
-		
-		if (securityContext.getUserPrincipal().getName() == null)
-			System.out.println(" ######## security context ###################");
-		
-		if (securityContext.isUserInRole("ADMIN"))
-			System.out.println(" ######## ADMIN ###################");
-		
 		// ONLY OWNER OR ADMIN CAN SAVE/UPDATE THE PRODUCT OF INTEREST
 		if (securityContext.getUserPrincipal().getName().equals(userMail)
 				|| securityContext.isUserInRole("ADMIN")) {

@@ -1,5 +1,7 @@
 package com.souza.mdp.services;
 
+import io.swagger.annotations.Api;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -36,6 +38,7 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.souza.mdp.models.User;
 
+@Api(value="User Manager")
 @Path("users")
 public class UserManager {
 	private static final Logger log = Logger.getLogger("UserManager");

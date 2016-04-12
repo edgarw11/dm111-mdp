@@ -1,5 +1,7 @@
 package com.souza.mdp.services;
 
+import io.swagger.annotations.Api;
+
 import javax.annotation.security.PermitAll;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -35,6 +37,7 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.souza.mdp.TokenCacheManager;
 
+@Api(value="token")
 @Path("/token")
 public class OAuthToken {
 
