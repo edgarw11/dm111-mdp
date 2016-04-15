@@ -201,6 +201,10 @@ public class ProductOfInterestManager {
 	}
 
 	@DELETE
+	@ApiOperation(response=Status.class, value = "Deletes a product of interest. Needs to specify a CPF and a productId")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not registered") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{cpf}/{productId}")
 	@RolesAllowed({ "ADMIN", "USER" })

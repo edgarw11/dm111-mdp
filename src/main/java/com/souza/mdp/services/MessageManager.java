@@ -53,7 +53,7 @@ public class MessageManager {
 	SecurityContext securityContext;
 
 	@POST
-	@ApiOperation(response=Status.class, value = "Sends the order update message by CPF")
+	@ApiOperation(response=Status.class, value = "Sends the order update message to user's device")
 	@ApiResponses(value = {
 			@ApiResponse(code = 403, message = "You don't have permission to do this"),
 			@ApiResponse(code = 404, message = "User not registered") })
