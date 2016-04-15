@@ -1,6 +1,9 @@
 package com.souza.mdp.services;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -31,6 +34,7 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.gson.Gson;
 import com.souza.mdp.models.OrderUpdateMsg;
 import com.souza.mdp.models.PriceUpdate;
+import com.souza.mdp.models.ProductOfInterest;
 import com.souza.mdp.models.User;
 import com.souza.mdp.services.UserManager;
 
@@ -49,6 +53,10 @@ public class MessageManager {
 	SecurityContext securityContext;
 
 	@POST
+	@ApiOperation(response=Status.class, value = "Sends the order update message by CPF")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not registered") })
 	@Path("/sendmessage/{cpf}")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)

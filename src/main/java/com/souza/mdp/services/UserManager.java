@@ -1,6 +1,9 @@
 package com.souza.mdp.services;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -8,7 +11,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
-import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -38,7 +40,7 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.souza.mdp.models.User;
 
-@Api(value="User Manager")
+@Api(value = "User Manager")
 @Path("users")
 public class UserManager {
 	private static final Logger log = Logger.getLogger("UserManager");
@@ -57,6 +59,10 @@ public class UserManager {
 	SecurityContext securityContext;
 
 	@GET
+	@ApiOperation(response = User.class, value = "Returns the user specified by the email")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not found") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
 	@Path("/byemail/{email}")
@@ -84,11 +90,15 @@ public class UserManager {
 	}
 
 	@GET
+	@ApiOperation(response = User.class, value = "Returns the user specified by the CPF")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not found") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
 	@Path("/bycpf/{cpf}")
 	public User getUserByCpf(@PathParam(PROP_CPF) String cpf) {
-		
+
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
 
@@ -116,7 +126,7 @@ public class UserManager {
 
 		if (userEntity != null) {
 
-			String email = (String)userEntity.getProperty(PROP_EMAIL);
+			String email = (String) userEntity.getProperty(PROP_EMAIL);
 			return email;
 
 		} else {
@@ -124,7 +134,8 @@ public class UserManager {
 		}
 	}
 
-	private static Entity getUserEntityByCpf(String cpf, DatastoreService datastore) {
+	private static Entity getUserEntityByCpf(String cpf,
+			DatastoreService datastore) {
 		Filter cpfFilter = new FilterPredicate(PROP_CPF, FilterOperator.EQUAL,
 				cpf);
 		Query query = new Query(USER_KIND).setFilter(cpfFilter);
@@ -133,20 +144,23 @@ public class UserManager {
 	}
 
 	@GET
+	@ApiOperation(response = User.class, responseContainer = "List", value = "Returns the list of users")
+	@ApiResponse(code = 403, message = "You don't have permission to do this")
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN" })
 	public List<User> getUsers() {
 		List<User> users = new ArrayList<>();
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
-		
-		if (securityContext == null){
+
+		if (securityContext == null) {
 			throw new WebApplicationException(Status.FORBIDDEN);
 		}
-		
-		if (securityContext.getUserPrincipal().getName().equals("admin@souza.com")
+
+		if (securityContext.getUserPrincipal().getName()
+				.equals("admin@souza.com")
 				|| securityContext.isUserInRole("ADMIN")) {
-			
+
 			Query query = new Query(USER_KIND).addSort(PROP_EMAIL,
 					SortDirection.ASCENDING);
 			List<Entity> userEntities = datastore.prepare(query).asList(
@@ -163,6 +177,11 @@ public class UserManager {
 	}
 
 	@POST
+	@ApiOperation(response = User.class, value = "Creates or updates an user")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 400, message = "There is already another user with this Email"),
+			@ApiResponse(code = 400, message = "There is already another user with this CPF")})
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
@@ -187,20 +206,12 @@ public class UserManager {
 							.equals(user.getEmail())
 							|| securityContext.isUserInRole("ADMIN")) {
 
-						if (user.getId() != 0) {
-
-							userToEntity(user, userEntity);
-							if (!securityContext.isUserInRole("ADMIN")) {
-								user.setRole("USER");
-							}
-							datastore.put(userEntity);
-							return user;
-
-						} else {
-							throw new WebApplicationException(
-									"O	ID	do	usuário	deve	ser	informado	para	ser	alterado",
-									Status.BAD_REQUEST);
+						userToEntity(user, userEntity);
+						if (!securityContext.isUserInRole("ADMIN")) {
+							user.setRole("USER");
 						}
+						datastore.put(userEntity);
+						return user;
 
 					} else {
 						throw new WebApplicationException(Status.FORBIDDEN);
@@ -240,51 +251,11 @@ public class UserManager {
 		return user;
 	}
 
-	@PUT
-	@Produces(MediaType.APPLICATION_JSON)
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Path("/{email}")
-	@RolesAllowed({ "ADMIN", "USER" })
-	@Deprecated
-	public User alterUser(@PathParam("email") String email, @Valid User user) {
-
-		if (user.getId() != 0) {
-			if (securityContext.getUserPrincipal().getName().equals(email)
-					|| securityContext.isUserInRole("ADMIN")) {
-				if (!checkIfEmailExist(user)) {
-					DatastoreService datastore = DatastoreServiceFactory
-							.getDatastoreService();
-					Filter emailFilter = new FilterPredicate(PROP_EMAIL,
-							FilterOperator.EQUAL, email);
-					Query query = new Query(USER_KIND).setFilter(emailFilter);
-					Entity userEntity = datastore.prepare(query)
-							.asSingleEntity();
-					if (userEntity != null) {
-						userToEntity(user, userEntity);
-						if (!securityContext.isUserInRole("ADMIN")) {
-							user.setRole("USER");
-						}
-						datastore.put(userEntity);
-						return user;
-					} else {
-						throw new WebApplicationException(Status.NOT_FOUND);
-					}
-				} else {
-					throw new WebApplicationException(
-							"Já	existe	um	usuário	cadastrado	com	o	mesmo	e-mail",
-							Status.BAD_REQUEST);
-				}
-			} else {
-				throw new WebApplicationException(Status.FORBIDDEN);
-			}
-		} else {
-			throw new WebApplicationException(
-					"O	ID	do	usuário	deve	ser	informado	para	ser	alterado",
-					Status.BAD_REQUEST);
-		}
-	}
-
 	@DELETE
+	@ApiOperation(response = Status.class, value = "Deletes the user specified by CPF")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not found") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{cpf}")
 	@RolesAllowed({ "ADMIN", "USER" })
@@ -313,6 +284,10 @@ public class UserManager {
 	}
 
 	@PUT
+	@ApiOperation(response = User.class, value = "Updates the GCM registration Id for the authenticated user. Returns the updated user.")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not found") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/update_gcm_reg_id/{gcmRegId}")
 	@RolesAllowed({ "USER" })

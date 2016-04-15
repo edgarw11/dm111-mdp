@@ -1,6 +1,9 @@
 package com.souza.mdp.services;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +53,10 @@ public class ProductOfInterestManager {
 
 	@POST
 	@Path("priceAlert")
+	@ApiOperation(response = Status.class, 
+	value = "Sends a notification to user device if the user has registered interest "
+			+ "in the product and the price is equal or less then the desired.")
+	@ApiResponse(code = 403, message = "You don't have permission to do this")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN" })
@@ -81,6 +88,10 @@ public class ProductOfInterestManager {
 	}
 
 	@POST
+	@ApiOperation(response = Status.class, value = "Registers a product of intersest for a specified user")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not found") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
@@ -95,26 +106,31 @@ public class ProductOfInterestManager {
 		if (securityContext.getUserPrincipal().getName().equals(userMail)
 				|| securityContext.isUserInRole("ADMIN")) {
 
-			Entity prodOfInteretEntity = getProductOfInterest(
-					prodOfInterest.getCpf(), prodOfInterest.getProductId(),
-					datastore);
+			if (userMail == null) {
+				Entity prodOfInteretEntity = getProductOfInterest(
+						prodOfInterest.getCpf(), prodOfInterest.getProductId(),
+						datastore);
+				if (prodOfInteretEntity != null) { // EDIT
 
-			if (prodOfInteretEntity != null) { // EDIT
+					productOfInterestToEntity(prodOfInterest,
+							prodOfInteretEntity);
 
-				productOfInterestToEntity(prodOfInterest, prodOfInteretEntity);
+					datastore.put(prodOfInteretEntity);
+					return Status.OK;
 
-				datastore.put(prodOfInteretEntity);
-				return Status.OK;
+				} else { // CREATE NEW USER
 
-			} else { // CREATE NEW USER
+					Key prodOfInterestKey = KeyFactory.createKey(
+							PRODUCTS_OF_INTEREST_KIND, "productOfInterestKey");
+					prodOfInteretEntity = new Entity(PRODUCTS_OF_INTEREST_KIND,
+							prodOfInterestKey);
 
-				Key prodOfInterestKey = KeyFactory.createKey(
-						PRODUCTS_OF_INTEREST_KIND, "productOfInterestKey");
-				prodOfInteretEntity = new Entity(PRODUCTS_OF_INTEREST_KIND,
-						prodOfInterestKey);
-
-				productOfInterestToEntity(prodOfInterest, prodOfInteretEntity);
-				datastore.put(prodOfInteretEntity);
+					productOfInterestToEntity(prodOfInterest,
+							prodOfInteretEntity);
+					datastore.put(prodOfInteretEntity);
+				}
+			} else{
+				throw new WebApplicationException(Status.NOT_FOUND);
 			}
 		} else {
 			throw new WebApplicationException(Status.FORBIDDEN);
@@ -141,6 +157,11 @@ public class ProductOfInterestManager {
 	}
 
 	@GET
+	@ApiOperation(response = ProductOfInterest.class, responseContainer="list",
+	value = "Returns a list of products of intersest for a specified user")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not found") })
 	@Produces(MediaType.APPLICATION_JSON)
 	@RolesAllowed({ "ADMIN", "USER" })
 	@Path("/bycpf/{cpf}")
