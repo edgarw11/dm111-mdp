@@ -49,6 +49,7 @@ public class UserManager {
 	public static final String PROP_PASSWORD = "password";
 	public static final String PROP_GCM_REG_ID = "gcmRegId";
 	public static final String PROP_LAST_LOGIN = "lastLogin";
+	public static final String PROP_LAST_MODIFIED = "lastModified";
 	public static final String PROP_LAST_GCM_REGISTER = "lastGCMRegister";
 	public static final String PROP_ROLE = "role";
 	public static final String PROP_CPF = "cpf";
@@ -199,6 +200,8 @@ public class UserManager {
 		if (!checkIfEmailExist(user)) {
 
 			if (!checkIfCpfExist(user)) {
+				
+				user.setLastModified((Date) Calendar.getInstance().getTime());
 
 				if (userEntity != null) { // EDIT USER
 					// ONLY OWNER OR ADMIN CAN EDIT THE USER
@@ -206,10 +209,10 @@ public class UserManager {
 							.equals(user.getEmail())
 							|| securityContext.isUserInRole("ADMIN")) {
 
-						userToEntity(user, userEntity);
 						if (!securityContext.isUserInRole("ADMIN")) {
 							user.setRole("USER");
 						}
+						userToEntity(user, userEntity);
 						datastore.put(userEntity);
 						return user;
 
@@ -356,6 +359,7 @@ public class UserManager {
 		userEntity.setProperty(PROP_PASSWORD, user.getPassword());
 		userEntity.setProperty(PROP_GCM_REG_ID, user.getGcmRegId());
 		userEntity.setProperty(PROP_LAST_LOGIN, user.getLastLogin());
+		userEntity.setProperty(PROP_LAST_MODIFIED, user.getLastModified());
 		userEntity.setProperty(PROP_LAST_GCM_REGISTER,
 				user.getLastGCMRegister());
 		userEntity.setProperty(PROP_ROLE, user.getRole());
@@ -372,6 +376,7 @@ public class UserManager {
 		user.setGcmRegId((String) userEntity.getProperty(PROP_GCM_REG_ID));
 		user.setId(userEntity.getKey().getId());
 		user.setLastLogin((Date) userEntity.getProperty(PROP_LAST_LOGIN));
+		user.setLastModified((Date) userEntity.getProperty(PROP_LAST_MODIFIED));
 		user.setLastGCMRegister((Date) userEntity
 				.getProperty(PROP_LAST_GCM_REGISTER));
 		user.setRole((String) userEntity.getProperty(PROP_ROLE));

@@ -6,8 +6,6 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response.Status;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -28,7 +26,7 @@ public class InitServletContextClass implements ServletContextListener {
 
 	@Override
 	public void contextInitialized(ServletContextEvent arg0) {
-		log.info("Aplicação	Exemplo1 iniciada!");
+		log.info("Aplicação	MDP iniciada!");
 
 		initializeUserEntities();
 	}
@@ -40,6 +38,7 @@ public class InitServletContextClass implements ServletContextListener {
 	}
 
 	private void initializeUserEntities() {
+		deleteOldAdmin();
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
 		Filter roleFilter = new FilterPredicate(UserManager.PROP_ROLE,
@@ -54,12 +53,12 @@ public class InitServletContextClass implements ServletContextListener {
 			Entity userEntity = new Entity(UserManager.USER_KIND, userKey);
 			userEntity.setProperty(UserManager.PROP_EMAIL, "admin@souza.com");
 			userEntity.setProperty(UserManager.PROP_PASSWORD, "Admin#7");
-			userEntity.setProperty(UserManager.PROP_CPF, "000.000.000-02");
+			userEntity.setProperty(UserManager.PROP_CPF, "000.000.000-01");
 			userEntity.setProperty(UserManager.PROP_GCM_REG_ID, "");
-			userEntity.setProperty(UserManager.PROP_LAST_LOGIN, Calendar
+			userEntity.setProperty(UserManager.PROP_LAST_LOGIN, null);
+			userEntity.setProperty(UserManager.PROP_LAST_MODIFIED, Calendar
 					.getInstance().getTime());
-			userEntity.setProperty(UserManager.PROP_LAST_GCM_REGISTER, Calendar
-					.getInstance().getTime());
+			userEntity.setProperty(UserManager.PROP_LAST_GCM_REGISTER, null);
 			userEntity.setProperty(UserManager.PROP_ROLE, "ADMIN");
 			userEntity.setProperty(UserManager.PROP_SALES_ID, 0);
 			userEntity.setProperty(UserManager.PROP_CRM_ID, 0);
@@ -68,12 +67,12 @@ public class InitServletContextClass implements ServletContextListener {
 		}
 	}
 
-	/*private void deleteOldAdmin() {
+	private void deleteOldAdmin() {
 		// TODO Auto-generated method stub
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
 		Filter cpfFilter = new FilterPredicate(UserManager.PROP_EMAIL,
-				FilterOperator.EQUAL, "admin2@souza.com");
+				FilterOperator.EQUAL, "admin@souza.com");
 		Query query = new Query(UserManager.USER_KIND).setFilter(cpfFilter);
 		Entity userEntity = datastore.prepare(query).asSingleEntity();
 
@@ -88,5 +87,5 @@ public class InitServletContextClass implements ServletContextListener {
 
 		}
 		
-	}*/
+	}
 }

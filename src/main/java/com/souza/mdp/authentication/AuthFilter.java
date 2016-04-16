@@ -160,6 +160,7 @@ public class AuthFilter implements ContainerRequestFilter {
 		user.setId(userEntity.getKey().getId());
 		user.setGcmRegId((String) userEntity.getProperty(UserManager.PROP_GCM_REG_ID));
 		user.setLastLogin((Date) Calendar.getInstance().getTime());
+		user.setLastModified((Date) userEntity.getProperty(UserManager.PROP_LAST_MODIFIED));
 		user.setLastGCMRegister((Date) userEntity.getProperty(UserManager.PROP_LAST_GCM_REGISTER));
 		user.setRole((String) userEntity.getProperty(UserManager.PROP_ROLE));
 		userEntity.setProperty(UserManager.PROP_LAST_LOGIN, user.getLastLogin());

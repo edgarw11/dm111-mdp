@@ -18,6 +18,7 @@ public class User implements Principal{
 	private String password;
 	private String gcmRegId;
 	private Date lastLogin;
+	private Date lastModified;
 	private Date lastGCMRegister;
 	@NotNull
 	private String role;
@@ -72,6 +73,14 @@ public class User implements Principal{
 
 	public void setLastLogin(Date lastLogin) {
 		this.lastLogin = lastLogin;
+	}
+
+	public Date getLastModified() {
+		return lastModified;
+	}
+
+	public void setLastModified(Date lastModified) {
+		this.lastModified = lastModified;
 	}
 
 	public Date getLastGCMRegister() {

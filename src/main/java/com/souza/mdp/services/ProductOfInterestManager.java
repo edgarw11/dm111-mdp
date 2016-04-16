@@ -87,6 +87,7 @@ public class ProductOfInterestManager {
 		return Status.OK;
 	}
 
+	
 	@POST
 	@ApiOperation(response = Status.class, value = "Registers a product of intersest for a specified user")
 	@ApiResponses(value = {
@@ -105,8 +106,8 @@ public class ProductOfInterestManager {
 		// ONLY OWNER OR ADMIN CAN SAVE/UPDATE THE PRODUCT OF INTEREST
 		if (securityContext.getUserPrincipal().getName().equals(userMail)
 				|| securityContext.isUserInRole("ADMIN")) {
-
-			if (userMail == null) {
+// TODO : FIX
+			if (userMail != null) {
 				Entity prodOfInteretEntity = getProductOfInterest(
 						prodOfInterest.getCpf(), prodOfInterest.getProductId(),
 						datastore);
