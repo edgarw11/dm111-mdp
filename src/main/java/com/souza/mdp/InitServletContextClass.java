@@ -38,7 +38,6 @@ public class InitServletContextClass implements ServletContextListener {
 	}
 
 	private void initializeUserEntities() {
-		deleteOldAdmin();
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
 		Filter roleFilter = new FilterPredicate(UserManager.PROP_ROLE,
@@ -67,7 +66,7 @@ public class InitServletContextClass implements ServletContextListener {
 		}
 	}
 
-	private void deleteOldAdmin() {
+	/*private void deleteOldAdmin() {
 		// TODO Auto-generated method stub
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
@@ -87,5 +86,5 @@ public class InitServletContextClass implements ServletContextListener {
 
 		}
 		
-	}
+	}*/
 }

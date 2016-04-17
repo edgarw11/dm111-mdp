@@ -121,29 +121,6 @@ public class UserManager {
 		}
 	}
 
-	public static String getUserMailByCpf(String cpf, DatastoreService datastore) {
-
-		Entity userEntity = getUserEntityByCpf(cpf, datastore);
-
-		if (userEntity != null) {
-
-			String email = (String) userEntity.getProperty(PROP_EMAIL);
-			return email;
-
-		} else {
-			throw new WebApplicationException(Status.NOT_FOUND);
-		}
-	}
-
-	private static Entity getUserEntityByCpf(String cpf,
-			DatastoreService datastore) {
-		Filter cpfFilter = new FilterPredicate(PROP_CPF, FilterOperator.EQUAL,
-				cpf);
-		Query query = new Query(USER_KIND).setFilter(cpfFilter);
-		Entity userEntity = datastore.prepare(query).asSingleEntity();
-		return userEntity;
-	}
-
 	@GET
 	@ApiOperation(response = User.class, responseContainer = "List", value = "Returns the list of users")
 	@ApiResponse(code = 403, message = "You don't have permission to do this")
@@ -196,62 +173,33 @@ public class UserManager {
 				FilterOperator.EQUAL, user.getEmail());
 		Query query = new Query(USER_KIND).setFilter(emailFilter);
 		Entity userEntity = datastore.prepare(query).asSingleEntity();
+		User userCreatedOrUpdated = null;
+		
+		if (!checkIfCpfExist(user)) {
+			
+			user.setLastModified((Date) Calendar.getInstance().getTime());
 
-		if (!checkIfEmailExist(user)) {
+			if (userEntity != null) { // EDIT USER
+				userCreatedOrUpdated = editUser(user, datastore, userEntity);
 
-			if (!checkIfCpfExist(user)) {
-				
-				user.setLastModified((Date) Calendar.getInstance().getTime());
+			} else { // CREATE NEW USER
+				// ONLY ADMIN CAN CREATE NEW USERS
+				if (securityContext.isUserInRole("ADMIN")) {
 
-				if (userEntity != null) { // EDIT USER
-					// ONLY OWNER OR ADMIN CAN EDIT THE USER
-					if (securityContext.getUserPrincipal().getName()
-							.equals(user.getEmail())
-							|| securityContext.isUserInRole("ADMIN")) {
+					userCreatedOrUpdated = createUser(user, datastore);
 
-						if (!securityContext.isUserInRole("ADMIN")) {
-							user.setRole("USER");
-						}
-						userToEntity(user, userEntity);
-						datastore.put(userEntity);
-						return user;
-
-					} else {
-						throw new WebApplicationException(Status.FORBIDDEN);
-					}
-
-				} else { // CREATE NEW USER
-					// ONLY ADMIN CAN CREATE NEW USERS
-					if (securityContext.isUserInRole("ADMIN")) {
-
-						Key userKey = KeyFactory
-								.createKey(USER_KIND, "userKey");
-						userEntity = new Entity(USER_KIND, userKey);
-						user.setGcmRegId("");
-						user.setLastGCMRegister(null);
-						user.setLastLogin(null);
-						userToEntity(user, userEntity);
-						datastore.put(userEntity);
-						user.setId(userEntity.getKey().getId());
-
-					} else {
-						throw new WebApplicationException(Status.FORBIDDEN);
-					}
+				} else {
+					throw new WebApplicationException(Status.FORBIDDEN);
 				}
-
-			} else {
-				throw new WebApplicationException(
-						"Já	existe	um	usuário	cadastrado	com	o	mesmo	CPF",
-						Status.BAD_REQUEST);
 			}
 
 		} else {
 			throw new WebApplicationException(
-					"Já	existe	um	usuário	cadastrado	com	o	mesmo	e-mail",
+					"Já existe um usuário cadastrado com o mesmo CPF",
 					Status.BAD_REQUEST);
 		}
 
-		return user;
+		return userCreatedOrUpdated;
 	}
 
 	@DELETE
@@ -260,14 +208,46 @@ public class UserManager {
 			@ApiResponse(code = 403, message = "You don't have permission to do this"),
 			@ApiResponse(code = 404, message = "User not found") })
 	@Produces(MediaType.APPLICATION_JSON)
-	@Path("/{cpf}")
+	@Path("/bycpf/{cpf}")
 	@RolesAllowed({ "ADMIN", "USER" })
-	public Status deleteUser(@PathParam(PROP_CPF) String cpf) {
+	public Status deleteUserByCpf(@PathParam(PROP_CPF) String cpf) {
 
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
 
 		Entity userEntity = getUserEntityByCpf(cpf, datastore);
+
+		if (userEntity != null) {
+			if (securityContext.getUserPrincipal().getName()
+					.equals(userEntity.getProperty(PROP_EMAIL))
+					|| securityContext.isUserInRole("ADMIN")) {
+
+				datastore.delete(userEntity.getKey());
+				return Status.OK;
+
+			} else {
+				throw new WebApplicationException(Status.FORBIDDEN);
+			}
+		} else {
+			throw new WebApplicationException(Status.NOT_FOUND);
+
+		}
+	}
+	
+	@DELETE
+	@ApiOperation(response = Status.class, value = "Deletes the user specified by Email")
+	@ApiResponses(value = {
+			@ApiResponse(code = 403, message = "You don't have permission to do this"),
+			@ApiResponse(code = 404, message = "User not found") })
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/byemail/{email}")
+	@RolesAllowed({ "ADMIN", "USER" })
+	public Status deleteUserByEmail(@PathParam(PROP_EMAIL) String email) {
+
+		DatastoreService datastore = DatastoreServiceFactory
+				.getDatastoreService();
+
+		Entity userEntity = getUserEntityByEmail(email, datastore);
 
 		if (userEntity != null) {
 			if (securityContext.getUserPrincipal().getName()
@@ -316,29 +296,10 @@ public class UserManager {
 		}
 	}
 
-	private boolean checkIfEmailExist(User user) {
-		DatastoreService datastore = DatastoreServiceFactory
-				.getDatastoreService();
-		Filter emailFilter = new FilterPredicate(PROP_EMAIL,
-				FilterOperator.EQUAL, user.getEmail());
-		Query query = new Query(USER_KIND).setFilter(emailFilter);
-		Entity userEntity = datastore.prepare(query).asSingleEntity();
-		if (userEntity == null) {
-			return false;
-		} else {
-			if (userEntity.getKey().getId() == user.getId()) {
-				// está alterando o mesmo user
-				return false;
-			} else {
-				return true;
-			}
-		}
-	}
-
 	private boolean checkIfCpfExist(User user) {
 		DatastoreService datastore = DatastoreServiceFactory
 				.getDatastoreService();
-		Filter cpfFilter = new FilterPredicate(PROP_EMAIL,
+		Filter cpfFilter = new FilterPredicate(PROP_CPF,
 				FilterOperator.EQUAL, user.getCpf());
 		Query query = new Query(USER_KIND).setFilter(cpfFilter);
 		Entity userEntity = datastore.prepare(query).asSingleEntity();
@@ -353,15 +314,84 @@ public class UserManager {
 			}
 		}
 	}
+	
+	private User createUser(User user, DatastoreService datastore) {
+		Entity userEntity;
+		Key userKey = KeyFactory
+				.createKey(USER_KIND, "userKey");
+		userEntity = new Entity(USER_KIND, userKey);
+		user.setGcmRegId("");
+		user.setLastGCMRegister(null);
+		user.setLastLogin(null);
+		userToEntity(user, userEntity);
+		datastore.put(userEntity);
+//		user.setId(userEntity.getKey().getId());
+		return entityToUser(userEntity);
+	}
+
+	private User editUser(User user, DatastoreService datastore,
+			Entity userEntity) {
+		if (user.getId() != 0) {
+			// ONLY OWNER OR ADMIN CAN EDIT THE USER
+			if (securityContext.getUserPrincipal().getName()
+					.equals(user.getEmail())
+					|| securityContext.isUserInRole("ADMIN")) {
+
+				if (!securityContext.isUserInRole("ADMIN")) {
+					user.setRole("USER");
+				}
+				userToEntity(user, userEntity);
+				datastore.put(userEntity);
+				return entityToUser(userEntity);
+			} else {
+				throw new WebApplicationException(Status.FORBIDDEN);
+			}
+		} else {
+			throw new WebApplicationException(
+					"O ID do usuário deve ser informado para ser alterado",
+					Status.BAD_REQUEST);
+		}
+	}
+	
+	public static String getUserMailByCpf(String cpf, DatastoreService datastore) {
+
+		Entity userEntity = getUserEntityByCpf(cpf, datastore);
+
+		if (userEntity != null) {
+
+			String email = (String) userEntity.getProperty(PROP_EMAIL);
+			return email;
+
+		} else {
+			throw new WebApplicationException(Status.NOT_FOUND);
+		}
+	}
+
+	private static Entity getUserEntityByCpf(String cpf,
+			DatastoreService datastore) {
+		Filter cpfFilter = new FilterPredicate(PROP_CPF, FilterOperator.EQUAL,
+				cpf);
+		Query query = new Query(USER_KIND).setFilter(cpfFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
+		return userEntity;
+	}
+	
+	private static Entity getUserEntityByEmail(String email,
+			DatastoreService datastore) {
+		Filter emailFilter = new FilterPredicate(PROP_EMAIL, FilterOperator.EQUAL,
+				email);
+		Query query = new Query(USER_KIND).setFilter(emailFilter);
+		Entity userEntity = datastore.prepare(query).asSingleEntity();
+		return userEntity;
+	}
 
 	private void userToEntity(User user, Entity userEntity) {
 		userEntity.setProperty(PROP_EMAIL, user.getEmail());
 		userEntity.setProperty(PROP_PASSWORD, user.getPassword());
 		userEntity.setProperty(PROP_GCM_REG_ID, user.getGcmRegId());
-		userEntity.setProperty(PROP_LAST_LOGIN, user.getLastLogin());
+//		userEntity.setProperty(PROP_LAST_LOGIN, user.getLastLogin());
 		userEntity.setProperty(PROP_LAST_MODIFIED, user.getLastModified());
-		userEntity.setProperty(PROP_LAST_GCM_REGISTER,
-				user.getLastGCMRegister());
+//		userEntity.setProperty(PROP_LAST_GCM_REGISTER, user.getLastGCMRegister());
 		userEntity.setProperty(PROP_ROLE, user.getRole());
 		userEntity.setProperty(PROP_CPF, user.getCpf());
 		userEntity.setProperty(PROP_SALES_ID, user.getSalesId());
